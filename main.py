@@ -3,6 +3,8 @@ import scapy.all as scapy
 from scapy.layers.inet import IP, TCP, UDP
 import threading
 from queue import Queue
+import sys
+import time
 
 def tcp_connect_scan(target_ip, port, result_queue):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -82,6 +84,10 @@ def scan(target_ip, ports, scan_type="tcp_connect", num_threads=100):
         thread.start()
         threads.append(thread)
     
+    # Start a thread to handle user input
+    input_thread = threading.Thread(target=check_user_input, args=(threads,))
+    input_thread.start()
+
     for thread in threads:
         thread.join()
 
@@ -92,6 +98,14 @@ def scan(target_ip, ports, scan_type="tcp_connect", num_threads=100):
             print(f"Port {port} is open, service: {service}")
         else:
             print(f"Port {port} is closed")
+
+def check_user_input(threads):
+    while any(thread.is_alive() for thread in threads):
+        buffer = input("")
+        if any(thread.is_alive() for thread in threads):
+            print("Scan is still in progress...")
+        else:
+            break
 
 if __name__ == "__main__":
     target = "192.168.0.66"
